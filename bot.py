@@ -5,6 +5,9 @@ from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, Messa
 
 import pokebase as pb
 
+import os
+from dotenv import load_dotenv
+
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
@@ -25,7 +28,10 @@ async def get_random_pokemon(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await context.bot.send_photo(chat_id=update.effective_chat.id, photo=pokemon.sprites.front_default)
 
 if __name__ == '__main__':
-    application = ApplicationBuilder().token('8281613697:AAERP-LeGvW5m5XJETPrUQqs4qvYK3ck-RU').build()
+    load_dotenv()  # Load environment variables from .env file
+    bot_token = os.getenv('BOT_TOKEN')
+
+    application = ApplicationBuilder().token(bot_token).build()
     
     start_handler = CommandHandler('start', start)
     random_pokemon_handler = CommandHandler('randompokemon', get_random_pokemon)
