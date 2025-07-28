@@ -16,20 +16,28 @@ logging.basicConfig(
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id, text="I'm a pokemon bot! Use /help to see available commands.")
 
-async def get_random_pokemon(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    pokemon = pb.pokemon(random.randint(1, 1025))  # Assuming there are 1025 Pokémon
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Random Pokémon: {pokemon.name.capitalize()}")
-
-    print(f"Random Pokémon: {pokemon.name}")
-
-    # Send image of the Pokémon
-    if pokemon.sprites.front_default:
-        await context.bot.send_photo(chat_id=update.effective_chat.id, photo=pokemon.sprites.front_default)
 
 spawn_counters = {}       # group_id -> int
 spawn_thresholds = {}     # group_id -> int
-spawn_state = {"name": None, "caught": True}
+spawn_state = {}
 user_profiles = {}
+
+
+async def spawn_wild_pokemon(chat_id : str | int, context: ContextTypes.DEFAULT_TYPE):
+    pokemon = pb.pokemon(random.randint(1, 1025))  # Assuming there are 1025 Pokémon
+
+    if pokemon.sprites.front_default:
+        await context.bot.send_message(chat_id=chat_id, text="👀 A wild Pokémon has appeared! Use /catch <name> to catch it!")
+        # Send image of the Pokémon
+        await context.bot.send_photo(chat_id=chat_id, photo=pokemon.sprites.front_default)
+
+        spawn_state[chat_id] = {
+            "name": pokemon.name,
+            "caught": False
+        }
+    
+    return True
+
 
 # Set initial threshold for group
 def init_group(group_id):
@@ -56,16 +64,10 @@ async def on_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         spawn_counters[group_id] = 0
         spawn_thresholds[group_id] = random.randint(5, 15)
 
-        pokemon = pb.pokemon(random.randint(1, 898))  # Assuming there are 898 Pokémon
-        # await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Random Pokémon: {pokemon.name.capitalize()}")
-        spawn_state["name"] = pokemon.name
-        spawn_state["caught"] = False
-
-        # Send image of the Pokémon
-        if pokemon.sprites.front_default:
-            await context.bot.send_photo(chat_id=update.effective_chat.id, photo=pokemon.sprites.front_default)
-
-        await context.bot.send_message(chat_id=group_id, text="👀 A wild Pokémon has appeared! Use /catch <name> to catch it!")
+        # Spawn a new Pokémon
+        await spawn_wild_pokemon(group_id, context)
+    
+    return True
 
 
 async def catch_pokemon(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -91,6 +93,7 @@ async def catch_pokemon(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await context.bot.send_message(chat_id=update.effective_chat.id, text=f"{pokemon_name.capitalize()} is not the Pokémon that appeared! Try again.")
 
+
 async def view_pokemon(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     text = ""
@@ -102,6 +105,7 @@ async def view_pokemon(update: Update, context: ContextTypes.DEFAULT_TYPE):
             text += f"{pokemon.capitalize()} - {[pokemon_count]}\n"
         await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
 
+
 if __name__ == '__main__':
     load_dotenv()  # Load environment variables from .env file
     bot_token = os.getenv('BOT_TOKEN')
@@ -109,13 +113,11 @@ if __name__ == '__main__':
     application = ApplicationBuilder().token(bot_token).build()
     
     start_handler = CommandHandler('start', start)
-    random_pokemon_handler = CommandHandler('randompokemon', get_random_pokemon)
     catch_pokemon_handler = CommandHandler('catch', catch_pokemon)
     view_pokemon_handler = CommandHandler('mypokemon', view_pokemon)
     message_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), on_message)
 
     application.add_handler(start_handler)
-    application.add_handler(random_pokemon_handler)
     application.add_handler(catch_pokemon_handler)
     application.add_handler(view_pokemon_handler)
     application.add_handler(message_handler)
