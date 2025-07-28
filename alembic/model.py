@@ -6,14 +6,17 @@ from db import Base
 
 metadata = Base.metadata
 
+
 class CaughtPokemon(Base):
 
-    __tablename__ = 'caught_pokemon'
+    __tablename__ = "caught_pokemon"
 
     id = Column(INTEGER(11), primary_key=True, autoincrement=True)
     user_id = Column(INTEGER(11), nullable=False)
     pokemon_name = Column(String(50), nullable=False)
-    caught_at = Column(TIMESTAMP, nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+    caught_at = Column(
+        TIMESTAMP, nullable=False, server_default=text("CURRENT_TIMESTAMP")
+    )
 
     def __repr__(self):
         return f"<CaughtPokemon(user_id={self.user_id}, pokemon_name='{self.pokemon_name}', caught_at={self.caught_at}>"
