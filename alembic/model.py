@@ -2,7 +2,8 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, String, TIMESTAMP, text
 from sqlalchemy.dialects.mysql import INTEGER
 
-Base = declarative_base()
+from db import Base
+
 metadata = Base.metadata
 
 class CaughtPokemon(Base):
