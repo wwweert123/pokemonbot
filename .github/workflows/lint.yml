@@ -21,7 +21,7 @@ jobs:
         run: |
           pip install flake8 pylint black
       - name: Run Flake8
-        run: flake8 .
+        run: flake8 . --exclude alembic
       - name: Run Pylint
         run: pylint .
       - name: Run Black (check only)

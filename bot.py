@@ -18,7 +18,8 @@ from db import SessionLocal
 from alembic.model import CaughtPokemon
 
 logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=logging.INFO
 )
 
 
@@ -40,14 +41,17 @@ spawn_state = {}
 
 
 async def spawn_wild_pokemon(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
-    pokemon = pb.pokemon(random.randint(1, 1025))  # Assuming there are 1025 Pokémon
+    pokemon = pb.pokemon(random.randint(1, 1025))  # 1025 Pokémon
 
     if pokemon.sprites.front_default:
         # Send image of the Pokémon
         await context.bot.send_photo(
             chat_id=chat_id,
             photo=pokemon.sprites.front_default,
-            caption="👀 A wild Pokémon has appeared! Use /catch <name> to catch it!",
+            caption=(
+                "👀 A wild Pokémon has appeared!\n"
+                "Use /catch <name> to catch it!"
+            ),
         )
 
         spawn_state[chat_id] = {"name": pokemon.name, "caught": False}
@@ -146,7 +150,10 @@ async def catch_pokemon(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text=f"{pokemon_name.capitalize()} is not the Pokémon that appeared! Try again.",
+            text=(
+                f"{pokemon_name.capitalize()} is not the Pokémon that appeared"
+                "! Try again."
+            ),
         )
 
 
@@ -159,7 +166,8 @@ def get_user_pokemons_db(user_id: int):
                 .all()
             )
             return {
-                pokemon.pokemon_name: pokemons.count(pokemon) for pokemon in pokemons
+                pokemon.pokemon_name: pokemons.count(pokemon)
+                for pokemon in pokemons
             }
     except Exception:
         logging.error(f"Error retrieving Pokémon for user {user_id}")
@@ -193,7 +201,10 @@ if __name__ == "__main__":
     start_handler = CommandHandler("start", start)
     catch_pokemon_handler = CommandHandler("catch", catch_pokemon)
     view_pokemon_handler = CommandHandler("mypokemon", view_pokemon)
-    message_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), on_message)
+    message_handler = MessageHandler(
+        filters.TEXT & (~filters.COMMAND),
+        on_message
+    )
 
     application.add_handler(start_handler)
     application.add_handler(catch_pokemon_handler)
