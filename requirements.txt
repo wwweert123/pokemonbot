@@ -1,5 +1,6 @@
 python-telegram-bot
 pokebase
-load_dotenv
+python-dotenv
 alembic
 sqlalchemy
+psycopg2-binary
