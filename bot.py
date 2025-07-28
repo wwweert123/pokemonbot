@@ -17,7 +17,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id, text="I'm a pokemon bot! Use /help to see available commands.")
 
 async def get_random_pokemon(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    pokemon = pb.pokemon(random.randint(1, 898))  # Assuming there are 898 Pokémon
+    pokemon = pb.pokemon(random.randint(1, 1025))  # Assuming there are 1025 Pokémon
     await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Random Pokémon: {pokemon.name.capitalize()}")
 
     print(f"Random Pokémon: {pokemon.name}")
