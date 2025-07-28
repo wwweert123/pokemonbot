@@ -74,24 +74,27 @@ async def on_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def catch_pokemon(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if spawn_state["caught"]:
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="No Pokémon to catch right now!")
+    chat = update.effective_chat
+    group_id = chat.id
+
+    if group_id not in spawn_state:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="No Pokémon has appeared yet! Keep chatting to spawn one.")
         return
 
     if len(context.args) == 0:
         await context.bot.send_message(chat_id=update.effective_chat.id, text="Please specify the Pokémon name to catch.")
         return
 
-    pokemon_name = context.args[0].lower()
-    if pokemon_name == spawn_state["name"]:
-        spawn_state["caught"] = True
+    pokemon_name = " ".join(context.args).lower()
+    if pokemon_name == spawn_state[group_id].get("name", "").lower():
+        
+        spawn_state.pop(group_id, None)  # Remove the spawn state for this group
+        
+        # Update user profile with caught Pokémon
         user_id = update.effective_user.id
-        if user_id not in user_profiles:
-            user_profiles[user_id] = {}
-        if spawn_state["name"] not in user_profiles[user_id]:
-            user_profiles[user_id][spawn_state["name"]] = 1
-        else:
-            user_profiles[user_id][spawn_state["name"]] += 1
+        user_data = user_profiles.setdefault(user_id, {})
+        user_data[spawn_state["name"]] = user_data.get(spawn_state["name"], 0) + 1
+
         await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Congratulations! You caught {pokemon_name.capitalize()}!")
     else:
         await context.bot.send_message(chat_id=update.effective_chat.id, text=f"{pokemon_name.capitalize()} is not the Pokémon that appeared! Try again.")
