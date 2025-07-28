@@ -1,3 +1,5 @@
 python-telegram-bot
 pokebase
 load_dotenv
+alembic
+sqlalchemy
