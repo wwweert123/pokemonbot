@@ -18,8 +18,7 @@ from db import SessionLocal
 from alembic.model import CaughtPokemon
 
 logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    level=logging.INFO
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
 
 
@@ -49,8 +48,7 @@ async def spawn_wild_pokemon(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
             chat_id=chat_id,
             photo=pokemon.sprites.front_default,
             caption=(
-                "👀 A wild Pokémon has appeared!\n"
-                "Use /catch <name> to catch it!"
+                "👀 A wild Pokémon has appeared!\n" "Use /catch <name> to catch it!"
             ),
         )
 
@@ -166,8 +164,7 @@ def get_user_pokemons_db(user_id: int):
                 .all()
             )
             return {
-                pokemon.pokemon_name: pokemons.count(pokemon)
-                for pokemon in pokemons
+                pokemon.pokemon_name: pokemons.count(pokemon) for pokemon in pokemons
             }
     except Exception:
         logging.error(f"Error retrieving Pokémon for user {user_id}")
@@ -201,10 +198,7 @@ if __name__ == "__main__":
     start_handler = CommandHandler("start", start)
     catch_pokemon_handler = CommandHandler("catch", catch_pokemon)
     view_pokemon_handler = CommandHandler("mypokemon", view_pokemon)
-    message_handler = MessageHandler(
-        filters.TEXT & (~filters.COMMAND),
-        on_message
-    )
+    message_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), on_message)
 
     application.add_handler(start_handler)
     application.add_handler(catch_pokemon_handler)
