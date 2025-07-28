@@ -29,6 +29,7 @@ async def get_random_pokemon(update: Update, context: ContextTypes.DEFAULT_TYPE)
 spawn_counters = {}       # group_id -> int
 spawn_thresholds = {}     # group_id -> int
 spawn_state = {"name": None, "caught": True}
+user_profiles = {}
 
 # Set initial threshold for group
 def init_group(group_id):
@@ -79,10 +80,27 @@ async def catch_pokemon(update: Update, context: ContextTypes.DEFAULT_TYPE):
     pokemon_name = context.args[0].lower()
     if pokemon_name == spawn_state["name"]:
         spawn_state["caught"] = True
+        user_id = update.effective_user.id
+        if user_id not in user_profiles:
+            user_profiles[user_id] = {}
+        if spawn_state["name"] not in user_profiles[user_id]:
+            user_profiles[user_id][spawn_state["name"]] = 1
+        else:
+            user_profiles[user_id][spawn_state["name"]] += 1
         await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Congratulations! You caught {pokemon_name.capitalize()}!")
     else:
         await context.bot.send_message(chat_id=update.effective_chat.id, text=f"{pokemon_name.capitalize()} is not the Pokémon that appeared! Try again.")
 
+async def view_pokemon(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    text = ""
+    if user_id not in user_profiles:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"You have not caught any Pokémon!")
+    else:
+        for pokemon in user_profiles[user_id].keys():
+            pokemon_count = user_profiles[user_id][pokemon]
+            text += f"{pokemon.capitalize()} - {[pokemon_count]}\n"
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
 
 if __name__ == '__main__':
     load_dotenv()  # Load environment variables from .env file
@@ -93,11 +111,13 @@ if __name__ == '__main__':
     start_handler = CommandHandler('start', start)
     random_pokemon_handler = CommandHandler('randompokemon', get_random_pokemon)
     catch_pokemon_handler = CommandHandler('catch', catch_pokemon)
+    view_pokemon_handler = CommandHandler('mypokemon', view_pokemon)
     message_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), on_message)
 
     application.add_handler(start_handler)
     application.add_handler(random_pokemon_handler)
     application.add_handler(catch_pokemon_handler)
+    application.add_handler(view_pokemon_handler)
     application.add_handler(message_handler)
 
     application.run_polling()
