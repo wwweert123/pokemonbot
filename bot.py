@@ -30,14 +30,14 @@ async def spawn_wild_pokemon(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
     pokemon = pb.pokemon(random.randint(1, 1025))  # Assuming there are 1025 Pokémon
 
     if pokemon.sprites.front_default:
-        await context.bot.send_message(chat_id=chat_id, text="👀 A wild Pokémon has appeared! Use /catch <name> to catch it!")
         # Send image of the Pokémon
-        await context.bot.send_photo(chat_id=chat_id, photo=pokemon.sprites.front_default)
+        await context.bot.send_photo(chat_id=chat_id, photo=pokemon.sprites.front_default, caption="👀 A wild Pokémon has appeared! Use /catch <name> to catch it!")
 
         spawn_state[chat_id] = {
             "name": pokemon.name,
             "caught": False
         }
+        print(pokemon.name)
     
     return True
 
@@ -73,6 +73,12 @@ async def on_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return True
 
 
+def update_user_pokemon(user_id: int, pokemon_name: str):
+    user_data = user_profiles.setdefault(user_id, {})
+    user_data[pokemon_name] = user_data.get(pokemon_name, 0) + 1
+    return True
+
+
 async def catch_pokemon(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
     group_id = chat.id
@@ -90,10 +96,10 @@ async def catch_pokemon(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         # Update user profile with caught Pokémon
         user_id = update.effective_user.id
-        user_data = user_profiles.setdefault(user_id, {})
-        user_data[spawn_state[group_id]["name"]] = user_data.get(spawn_state[group_id]["name"], 0) + 1
+        update_user_pokemon(user_id, spawn_state[group_id]["name"])
         
-        spawn_state.pop(group_id, None)  # Remove the spawn state for this group
+        # Remove the spawn state for this group
+        spawn_state.pop(group_id, None)
 
         await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Congratulations! You caught {pokemon_name.capitalize()}!")
     else:
