@@ -17,9 +17,9 @@ logging.basicConfig(
 )
 
 
-LOWER_MESSAGE_THRESHOLD = 1  # Minimum messages to trigger a spawn
-UPPER_MESSAGE_THRESHOLD = 5  # Maximum messages to trigger a spawn
-RESPAWN_THRESHOLD = 15       # Number of messages to trigger a respawn
+LOWER_MESSAGE_THRESHOLD = 10 # Minimum messages to trigger a spawn
+UPPER_MESSAGE_THRESHOLD = 20 # Maximum messages to trigger a spawn
+RESPAWN_THRESHOLD = 30       # Number of messages to trigger a respawn
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -48,7 +48,7 @@ async def spawn_wild_pokemon(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
 
 
 # Reset spawn counters
-def set_counters(group_id):
+def reset_counter(group_id):
     spawn_counters[group_id] = 0
     spawn_thresholds[group_id] = random.randint(LOWER_MESSAGE_THRESHOLD, UPPER_MESSAGE_THRESHOLD)
 
@@ -56,32 +56,31 @@ def set_counters(group_id):
 # Set initial threshold for group
 def init_group(group_id):
     if group_id not in spawn_thresholds:
-        set_counters(group_id)
+        reset_counter(group_id)
 
 
 # Main message listener (non-command messages)
 async def on_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Get Chat object
     chat = update.effective_chat
+
+    # Ignore non-group chats
     if chat.type not in ["group", "supergroup"]:
         return
 
+    # Initialize counters for the group if not already done
     group_id = chat.id
     init_group(group_id)
 
+    # Increment the spawn counter for the group
     spawn_counters[group_id] += 1
 
-    if spawn_counters[group_id] >= RESPAWN_THRESHOLD:
-        set_counters(group_id)
+    if spawn_state.get(group_id) is None and spawn_counters[group_id] >= spawn_thresholds[group_id]:
+        reset_counter(group_id)
         await spawn_wild_pokemon(group_id, context)
-
-    if spawn_state.get(group_id) is not None:
-        return
-
-    if spawn_counters[group_id] >= spawn_thresholds[group_id]:
-        set_counters(group_id)
+    elif spawn_counters[group_id] >= RESPAWN_THRESHOLD:
+        reset_counter(group_id)
         await spawn_wild_pokemon(group_id, context)
-    
-    return True
 
 
 def update_user_pokemon_db(user_id: int, pokemon_name: str):
