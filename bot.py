@@ -8,6 +8,9 @@ import pokebase as pb
 import os
 from dotenv import load_dotenv
 
+from db import SessionLocal
+from alembic.model import CaughtPokemon
+
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
@@ -23,7 +26,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 spawn_counters = {}       # group_id -> int
 spawn_thresholds = {}     # group_id -> int
 spawn_state = {}
-user_profiles = {}
 
 
 async def spawn_wild_pokemon(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
@@ -73,10 +75,14 @@ async def on_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return True
 
 
-def update_user_pokemon(user_id: int, pokemon_name: str):
-    user_data = user_profiles.setdefault(user_id, {})
-    user_data[pokemon_name] = user_data.get(pokemon_name, 0) + 1
-    return True
+def update_user_pokemon_db(user_id: int, pokemon_name: str):
+    try:
+        with SessionLocal() as session:
+            new_caught_pokemon = CaughtPokemon(user_id=user_id, pokemon_name=pokemon_name)
+            session.add(new_caught_pokemon)
+            session.commit()
+    except Exception:
+        logging.error(f"Error updating user {user_id} with caught Pokémon {pokemon_name}")
 
 
 async def catch_pokemon(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -96,7 +102,7 @@ async def catch_pokemon(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         # Update user profile with caught Pokémon
         user_id = update.effective_user.id
-        update_user_pokemon(user_id, spawn_state[group_id]["name"])
+        update_user_pokemon_db(user_id, spawn_state[group_id]["name"])
         
         # Remove the spawn state for this group
         spawn_state.pop(group_id, None)
@@ -106,16 +112,29 @@ async def catch_pokemon(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(chat_id=update.effective_chat.id, text=f"{pokemon_name.capitalize()} is not the Pokémon that appeared! Try again.")
 
 
+def get_user_pokemons_db(user_id: int):
+    try:
+        with SessionLocal() as session:
+            pokemons = session.query(CaughtPokemon).filter(CaughtPokemon.user_id == user_id).all()
+            return {pokemon.pokemon_name: pokemons.count(pokemon) for pokemon in pokemons}
+    except Exception:
+        logging.error(f"Error retrieving Pokémon for user {user_id}")
+        return {}
+
+
 async def view_pokemon(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
+
+    user_caught_pokemons = get_user_pokemons_db(user_id)
+    if not user_caught_pokemons:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="You have not caught any Pokémon yet!")
+        return
+    
+    # Format the response
     text = ""
-    if user_id not in user_profiles:
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"You have not caught any Pokémon!")
-    else:
-        for pokemon in user_profiles[user_id].keys():
-            pokemon_count = user_profiles[user_id][pokemon]
-            text += f"{pokemon.capitalize()} - {[pokemon_count]}\n"
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+    for pokemon, count in user_caught_pokemons.items():
+        text += f"{pokemon.capitalize()} - {count}\n"
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
 
 
 if __name__ == '__main__':
