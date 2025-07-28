@@ -13,6 +13,9 @@ logging.basicConfig(
     level=logging.INFO
 )
 
+LOWER_MESSAGE_THRESHOLD = 1  # Minimum messages to trigger a spawn
+UPPER_MESSAGE_THRESHOLD = 5  # Maximum messages to trigger a spawn
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id, text="I'm a pokemon bot! Use /help to see available commands.")
 
@@ -23,7 +26,7 @@ spawn_state = {}
 user_profiles = {}
 
 
-async def spawn_wild_pokemon(chat_id : str | int, context: ContextTypes.DEFAULT_TYPE):
+async def spawn_wild_pokemon(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
     pokemon = pb.pokemon(random.randint(1, 1025))  # Assuming there are 1025 Pokémon
 
     if pokemon.sprites.front_default:
@@ -42,7 +45,7 @@ async def spawn_wild_pokemon(chat_id : str | int, context: ContextTypes.DEFAULT_
 # Set initial threshold for group
 def init_group(group_id):
     if group_id not in spawn_thresholds:
-        spawn_thresholds[group_id] = random.randint(5, 15)
+        spawn_thresholds[group_id] = random.randint(LOWER_MESSAGE_THRESHOLD, UPPER_MESSAGE_THRESHOLD)
         spawn_counters[group_id] = 0
 
 # Main message listener (non-command messages)
@@ -54,7 +57,7 @@ async def on_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     group_id = chat.id
     init_group(group_id)
 
-    if not spawn_state["caught"]:  # Only spawn if nothing is active
+    if spawn_state.get(group_id) is not None:
         return
 
     spawn_counters[group_id] += 1
@@ -62,7 +65,7 @@ async def on_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if spawn_counters[group_id] >= spawn_thresholds[group_id]:
         # Reset the counters
         spawn_counters[group_id] = 0
-        spawn_thresholds[group_id] = random.randint(5, 15)
+        spawn_thresholds[group_id] = random.randint(LOWER_MESSAGE_THRESHOLD, UPPER_MESSAGE_THRESHOLD)
 
         # Spawn a new Pokémon
         await spawn_wild_pokemon(group_id, context)
