@@ -27,17 +27,26 @@ UPPER_MESSAGE_THRESHOLD = 20  # Maximum messages to trigger a spawn
 RESPAWN_THRESHOLD = 30  # Number of messages to trigger a respawn
 
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def start_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    activation_state[chat_id] = True
     await context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text="I'm a pokemon bot! Use /help to see available commands.",
+        chat_id=chat_id,
+        text="Pokémon will begin spawning.",
     )
 
+async def stop_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    activation_state[chat_id] = False
+    await context.bot.send_message(
+        chat_id=chat_id,
+        text="Pokémon will stop spawning.",
+    )
 
 spawn_counters = {}  # chat_id -> int
 spawn_thresholds = {}  # chat_id -> int
 spawn_state = {}
-
+activation_state = {}
 
 async def spawn_wild_pokemon(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
     pokemon = pb.pokemon(random.randint(1, 1025))  # 1025 Pokémon
@@ -87,7 +96,9 @@ async def on_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Initialize state and counters for the group if not already done
     init_group(chat_id)
 
-    # Ignore group_id)
+    # Ignore groups on stop
+    if not activation_state[chat_id]:
+        return
 
     # Increment the spawn counter for the group
     spawn_counters[chat_id] += 1
@@ -198,12 +209,14 @@ if __name__ == "__main__":
 
     application = ApplicationBuilder().token(bot_token).build()
 
-    start_handler = CommandHandler("start", start)
+    start_handler = CommandHandler("start", start_bot)
+    stop_handler = CommandHandler("stop", stop_bot)
     catch_pokemon_handler = CommandHandler("catch", catch_pokemon)
     view_pokemon_handler = CommandHandler("mypokemon", view_pokemon)
     message_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), on_message)
 
     application.add_handler(start_handler)
+    application.add_handler(stop_handler)
     application.add_handler(catch_pokemon_handler)
     application.add_handler(view_pokemon_handler)
     application.add_handler(message_handler)
