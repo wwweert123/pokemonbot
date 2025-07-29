@@ -27,6 +27,12 @@ UPPER_MESSAGE_THRESHOLD = 20  # Maximum messages to trigger a spawn
 RESPAWN_THRESHOLD = 30  # Number of messages to trigger a respawn
 
 
+spawn_counters = {}  # chat_id -> int
+spawn_thresholds = {}  # chat_id -> int
+spawn_state = {}
+activation_state = {}
+
+
 async def start_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     activation_state[chat_id] = True
@@ -34,6 +40,7 @@ async def start_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_id=chat_id,
         text="Pokémon will begin spawning.",
     )
+
 
 async def stop_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
@@ -43,10 +50,6 @@ async def stop_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text="Pokémon will stop spawning.",
     )
 
-spawn_counters = {}  # chat_id -> int
-spawn_thresholds = {}  # chat_id -> int
-spawn_state = {}
-activation_state = {}
 
 async def spawn_wild_pokemon(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
     pokemon = pb.pokemon(random.randint(1, 1025))  # 1025 Pokémon
@@ -90,7 +93,7 @@ async def on_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Ignore non-group chats
     if chat.type not in ["group", "supergroup"]:
         return
-    
+
     chat_id = chat.id
 
     # Initialize state and counters for the group if not already done
