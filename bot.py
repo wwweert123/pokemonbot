@@ -27,16 +27,28 @@ UPPER_MESSAGE_THRESHOLD = 20  # Maximum messages to trigger a spawn
 RESPAWN_THRESHOLD = 30  # Number of messages to trigger a respawn
 
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+spawn_counters = {}  # chat_id -> int
+spawn_thresholds = {}  # chat_id -> int
+spawn_state = {}
+activation_state = {}
+
+
+async def start_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    activation_state[chat_id] = True
     await context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text="I'm a pokemon bot! Use /help to see available commands.",
+        chat_id=chat_id,
+        text="Pokémon will begin spawning.",
     )
 
 
-spawn_counters = {}  # group_id -> int
-spawn_thresholds = {}  # group_id -> int
-spawn_state = {}
+async def stop_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    activation_state[chat_id] = False
+    await context.bot.send_message(
+        chat_id=chat_id,
+        text="Pokémon will stop spawning.",
+    )
 
 
 async def spawn_wild_pokemon(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
@@ -59,17 +71,18 @@ async def spawn_wild_pokemon(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
 
 
 # Reset spawn counters
-def reset_counter(group_id):
-    spawn_counters[group_id] = 0
-    spawn_thresholds[group_id] = random.randint(
+def reset_counter(chat_id):
+    spawn_counters[chat_id] = 0
+    spawn_thresholds[chat_id] = random.randint(
         LOWER_MESSAGE_THRESHOLD, UPPER_MESSAGE_THRESHOLD
     )
 
 
 # Set initial threshold for group
-def init_group(group_id):
-    if group_id not in spawn_thresholds:
-        reset_counter(group_id)
+def init_group(chat_id):
+    if chat_id not in spawn_thresholds:
+        activation_state[chat_id] = False
+        reset_counter(chat_id)
 
 
 # Main message listener (non-command messages)
@@ -81,22 +94,27 @@ async def on_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if chat.type not in ["group", "supergroup"]:
         return
 
-    # Initialize counters for the group if not already done
-    group_id = chat.id
-    init_group(group_id)
+    chat_id = chat.id
+
+    # Initialize state and counters for the group if not already done
+    init_group(chat_id)
+
+    # Ignore groups on stop
+    if not activation_state[chat_id]:
+        return
 
     # Increment the spawn counter for the group
-    spawn_counters[group_id] += 1
+    spawn_counters[chat_id] += 1
 
     if (
-        spawn_state.get(group_id) is None
-        and spawn_counters[group_id] >= spawn_thresholds[group_id]
+        spawn_state.get(chat_id) is None
+        and spawn_counters[chat_id] >= spawn_thresholds[chat_id]
     ):
-        reset_counter(group_id)
-        await spawn_wild_pokemon(group_id, context)
-    elif spawn_counters[group_id] >= RESPAWN_THRESHOLD:
-        reset_counter(group_id)
-        await spawn_wild_pokemon(group_id, context)
+        reset_counter(chat_id)
+        await spawn_wild_pokemon(chat_id, context)
+    elif spawn_counters[chat_id] >= RESPAWN_THRESHOLD:
+        reset_counter(chat_id)
+        await spawn_wild_pokemon(chat_id, context)
 
 
 def update_user_pokemon_db(user_id: int, pokemon_name: str):
@@ -114,40 +132,39 @@ def update_user_pokemon_db(user_id: int, pokemon_name: str):
 
 
 async def catch_pokemon(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat = update.effective_chat
-    group_id = chat.id
+    chat_id = update.effective_chat.id
 
-    if group_id not in spawn_state:
+    if chat_id not in spawn_state:
         await context.bot.send_message(
-            chat_id=update.effective_chat.id,
+            chat_id=chat_id,
             text="No Pokémon has appeared yet! Keep chatting to spawn one.",
         )
         return
 
     if len(context.args) == 0:
         await context.bot.send_message(
-            chat_id=update.effective_chat.id,
+            chat_id=chat_id,
             text="Please specify the Pokémon name to catch.",
         )
         return
 
     pokemon_name = " ".join(context.args).lower()
-    if pokemon_name == spawn_state[group_id].get("name", "").lower():
+    if pokemon_name == spawn_state[chat_id].get("name", "").lower():
 
         # Update user profile with caught Pokémon
         user_id = update.effective_user.id
-        update_user_pokemon_db(user_id, spawn_state[group_id]["name"])
+        update_user_pokemon_db(user_id, spawn_state[chat_id]["name"])
 
         # Remove the spawn state for this group
-        spawn_state.pop(group_id, None)
+        spawn_state.pop(chat_id, None)
 
         await context.bot.send_message(
-            chat_id=update.effective_chat.id,
+            chat_id=chat_id,
             text=f"Congratulations! You caught {pokemon_name.capitalize()}!",
         )
     else:
         await context.bot.send_message(
-            chat_id=update.effective_chat.id,
+            chat_id=chat_id,
             text=(
                 f"{pokemon_name.capitalize()} is not the Pokémon that appeared"
                 "! Try again."
@@ -195,12 +212,14 @@ if __name__ == "__main__":
 
     application = ApplicationBuilder().token(bot_token).build()
 
-    start_handler = CommandHandler("start", start)
+    start_handler = CommandHandler("start", start_bot)
+    stop_handler = CommandHandler("stop", stop_bot)
     catch_pokemon_handler = CommandHandler("catch", catch_pokemon)
     view_pokemon_handler = CommandHandler("mypokemon", view_pokemon)
     message_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), on_message)
 
     application.add_handler(start_handler)
+    application.add_handler(stop_handler)
     application.add_handler(catch_pokemon_handler)
     application.add_handler(view_pokemon_handler)
     application.add_handler(message_handler)
