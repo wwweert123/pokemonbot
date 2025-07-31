@@ -33,7 +33,7 @@ spawn_state = {}
 activation_state = {}
 
 
-admins = [1666986653]
+admins = [1666986653, 351841030]
 
 async def start_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id not in admins:
