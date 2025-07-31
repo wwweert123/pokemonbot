@@ -33,21 +33,39 @@ spawn_state = {}
 activation_state = {}
 
 
+admins = [1666986653]
+
 async def start_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id not in admins:
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text="🚫 Sorry, only Pokémon Professors (admins) can start the adventure!",
+        )
+        return
+
     chat_id = update.effective_chat.id
     activation_state[chat_id] = True
-    await context.bot.send_message(
+    await context.bot.send_animation(
         chat_id=chat_id,
-        text="Pokémon will begin spawning.",
+        animation="https://media.giphy.com/media/DRfu7BT8ZK1uo/giphy.gif",
+        caption="🌟 Welcome to the world of Pokémon! Wild Pokémon will begin appearing soon. Get ready to catch 'em all! 🌟",
     )
 
 
 async def stop_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id not in admins:
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text="🚫 Only Pokémon Professors (admins) can pause the adventure! Keep exploring and catching Pokémon!",
+        )
+        return
+
     chat_id = update.effective_chat.id
     activation_state[chat_id] = False
-    await context.bot.send_message(
+    await context.bot.send_animation(
         chat_id=chat_id,
-        text="Pokémon will stop spawning.",
+        animation="https://tenor.com/biMgn.gif",
+        caption="👋 Pokémon will stop spawning. You are leaving the world of Pokémon... until next time!",
     )
 
 
