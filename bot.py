@@ -63,7 +63,7 @@ async def stop_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
             text=(
                 "🚫 Only Pokémon Professors (admins) can pause the adventure! "
                 "Keep exploring and catching Pokémon!"
-                ),
+            ),
         )
         return
 
