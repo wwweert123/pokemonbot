@@ -49,7 +49,7 @@ async def start_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_animation(
         chat_id=chat_id,
         animation="https://media.giphy.com/media/DRfu7BT8ZK1uo/giphy.gif",
-        caption="🌟 Welcome to the world of Pokémon! Wild Pokémon will " 
+        caption="🌟 Welcome to the world of Pokémon! Wild Pokémon will "
         "begin appearing soon. Get ready to catch 'em all! 🌟",
     )
 
