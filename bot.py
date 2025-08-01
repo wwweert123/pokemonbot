@@ -6,7 +6,7 @@ from telegram.ext import (
     ContextTypes,
     CommandHandler,
     MessageHandler,
-    filters,
+    filters
 )
 
 import pokebase as pb
@@ -64,7 +64,7 @@ async def spawn_wild_pokemon(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
             ),
         )
 
-        spawn_state[chat_id] = {"name": pokemon.name, "caught": False}
+        spawn_state[chat_id] = {"name": pokemon.species.name, "caught": False}
         print(pokemon.name)
 
     return True
