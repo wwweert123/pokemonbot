@@ -84,7 +84,7 @@ async def spawn_wild_pokemon(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
         )
 
         spawn_state[chat_id] = {"name": pokemon.species.name, "caught": False}
-        print(pokemon.name)
+        print(pokemon.species.name)
 
     return True
 
