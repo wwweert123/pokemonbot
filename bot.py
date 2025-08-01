@@ -49,7 +49,8 @@ async def start_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_animation(
         chat_id=chat_id,
         animation="https://media.giphy.com/media/DRfu7BT8ZK1uo/giphy.gif",
-        caption="🌟 Welcome to the world of Pokémon! Wild Pokémon will begin appearing soon. Get ready to catch 'em all! 🌟",
+        caption="🌟 Welcome to the world of Pokémon! Wild Pokémon will " 
+        "begin appearing soon. Get ready to catch 'em all! 🌟",
     )
 
 
@@ -57,7 +58,8 @@ async def stop_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id not in admins:
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text="🚫 Only Pokémon Professors (admins) can pause the adventure! Keep exploring and catching Pokémon!",
+            text="🚫 Only Pokémon Professors (admins) can pause the adventure! "
+            "Keep exploring and catching Pokémon!",
         )
         return
 
@@ -66,7 +68,8 @@ async def stop_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_animation(
         chat_id=chat_id,
         animation="https://tenor.com/biMgn.gif",
-        caption="👋 Pokémon will stop spawning. You are leaving the world of Pokémon... until next time!",
+        caption="👋 Pokémon will stop spawning. You are leaving the world of "
+        "Pokémon... until next time!",
     )
 
 
