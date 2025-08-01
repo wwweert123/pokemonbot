@@ -73,7 +73,7 @@ async def stop_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_id=chat_id,
         animation="https://tenor.com/biMgn.gif",
         caption=(
-            "👋 Pokémon will stop spawning. You are leaving the world of" 
+            "👋 Pokémon will stop spawning. You are leaving the world of"
             "Pokémon... until next time!"
         ),
     )
